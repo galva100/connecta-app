@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Alert, Image, Pressable, SafeAreaView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 import { demoProfiles } from './src/data/profiles';
 import { signInWithEmail, signUpWithEmail } from './src/services/auth';
+import { likeProfile } from './src/services/dating';
 
 type Tab = 'discover' | 'likes' | 'profile';
 
@@ -27,9 +28,9 @@ function AuthScreen({ onAuthenticated }: { onAuthenticated: () => void }) {
   </View></SafeAreaView>;
 }
 
-function Discover({ onLike }: { onLike: () => void }) {
+function Discover({ onLike }: { onLike: (profileId: string) => void }) {
   const [index, setIndex] = useState(0); const profile = demoProfiles[index % demoProfiles.length];
-  const choose = (liked: boolean) => { if (liked) onLike(); setIndex((value) => value + 1); };
+  const choose = (liked: boolean) => { if (liked) onLike(profile.id); setIndex((value) => value + 1); };
   return <View style={styles.content}><Text style={styles.title}>Descubrir</Text><View style={styles.card}>
     <Image source={{ uri: profile.photoUrl }} style={styles.photo} /><View style={styles.cardInfo}><Text style={styles.name}>{profile.name}, {profile.age}</Text><Text style={styles.muted}>{profile.city} · A {profile.distanceKm} km</Text><Text style={styles.bio}>{profile.bio}</Text><View style={styles.chips}>{profile.interests.map((item) => <Text key={item} style={styles.chip}>{item}</Text>)}</View></View>
   </View><View style={styles.actions}><Pressable style={[styles.action, styles.nope]} onPress={() => choose(false)}><Text style={styles.actionText}>×</Text></Pressable><Pressable style={[styles.action, styles.like]} onPress={() => choose(true)}><Text style={styles.actionText}>♥</Text></Pressable></View></View>;
@@ -40,7 +41,16 @@ function Profile() { return <View style={styles.content}><Text style={styles.tit
 
 export default function App() {
   const [authenticated, setAuthenticated] = useState(false); const [tab, setTab] = useState<Tab>('discover'); const [likes, setLikes] = useState(0);
-  const page = useMemo(() => tab === 'discover' ? <Discover onLike={() => setLikes((n) => n + 1)} /> : tab === 'likes' ? <Likes likes={likes} /> : <Profile />, [tab, likes]);
+  const handleLike = async (profileId: string) => {
+    try {
+      const result = await likeProfile(profileId);
+      setLikes((n) => n + 1);
+      if (result.matched) Alert.alert('¡Es un match!', 'Ahora ambos pueden empezar una conversación.');
+    } catch (error) {
+      Alert.alert('No pudimos guardar tu interés', error instanceof Error ? error.message : 'Inténtalo de nuevo.');
+    }
+  };
+  const page = useMemo(() => tab === 'discover' ? <Discover onLike={handleLike} /> : tab === 'likes' ? <Likes likes={likes} /> : <Profile />, [tab, likes]);
   if (!authenticated) return <AuthScreen onAuthenticated={() => setAuthenticated(true)} />;
   return <SafeAreaView style={styles.screen}><StatusBar barStyle="dark-content" />{page}<View style={styles.tabBar}>{([['discover', '⌁', 'Descubrir'], ['likes', '♥', 'Conexiones'], ['profile', '◉', 'Perfil']] as const).map(([value, icon, label]) => <Pressable key={value} style={styles.tab} onPress={() => setTab(value)}><Text style={[styles.tabIcon, tab === value && styles.active]}>{icon}</Text><Text style={[styles.tabLabel, tab === value && styles.active]}>{label}</Text></Pressable>)}</View></SafeAreaView>;
 }

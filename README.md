@@ -8,6 +8,7 @@ Aplicación móvil de citas para Android, construida con Expo, React Native y Ty
 - Navegación principal: Descubrir, Conexiones y Perfil.
 - Tarjetas de perfiles y acciones de interés/descartar.
 - Esquema SQL inicial para perfiles y "me gusta" con políticas de acceso.
+- Creación automática de perfiles y matches persistentes cuando el interés es mutuo.
 
 ## Ejecutar
 
